@@ -19,7 +19,7 @@ Note: This tool is in development and is being checked for any unexpected behavi
 ## Build and Run
 1. Clone the repository:
 ```bash
-git clone https://github.com/[your-username]/ordo.git
+git clone https://github.com/shawshank725/ordo.git
 cd ordo
 ```
 2. Build project using Maven:
@@ -32,4 +32,5 @@ mvn clean package
 ```bash
 ordo --help
 ```
+
 
