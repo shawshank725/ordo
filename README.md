@@ -4,6 +4,8 @@ Ordo is a cross-platform command-line tool for advanced file and directory manag
 
 Designed for developers, power users, and anyone managing large collections of files (photos, documents, project assets, downloads), Ordo emphasizes usability, predictability, and protection against accidental data loss.
 
+Note: This tool is in development and is being checked for any unexpected behaviour or issues. If you find any issue, open one in this repository.
+
 ## Features
 
 - Smart file listing with filters (extension, size, creation date, recursive)
@@ -14,10 +16,19 @@ Designed for developers, power users, and anyone managing large collections of f
 - Clean, colored, and structured output
 - Single executable JAR (future native binaries via GraalVM planned)
 
-## Installation
-
-Download the latest JAR from [Releases](https://github.com/[your-username]/ordo/releases):
-
+## Build and Run
+1. Clone the repository:
 ```bash
-# Example (replace with actual version)
-curl -L https://github.com/[your-username]/ordo/releases/download/v0.1.0/ordo.jar -o ordo.jar
+git clone https://github.com/[your-username]/ordo.git
+cd ordo
+```
+2. Build project using Maven:
+```bash
+mvn clean package
+```
+3. This will produce an executable JAR file in the target directory.
+4. If using Linux Distro, try using alias ordo="path-to-ordo-jar-file-in-your-system".
+5. Type in terminal:
+```bash
+ordo --help
+```
