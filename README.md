@@ -1,6 +1,6 @@
 # Ordo
 
-Ordo is a cross-platform command-line tool for advanced file and directory management. Built in Java with Picocli, it offers safe and powerful batch operations including listing, renaming, transferring (move/copy), and deletion with comprehensive filtering and safety mechanisms.
+Ordo is a cross-platform command-line tool for advanced file and directory management. Built in Java with Picocli, it offers safe and powerful batch operations including listing, renaming, transferring (cut/copy), and deletion with comprehensive filtering and safety mechanisms.
 
 Designed for developers, power users, and anyone managing large collections of files (photos, documents, project assets, downloads), Ordo emphasizes usability, predictability, and protection against accidental data loss.
 
@@ -32,3 +32,4 @@ mvn clean package
 ```bash
 ordo --help
 ```
+
