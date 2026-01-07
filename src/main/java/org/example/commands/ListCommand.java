@@ -8,9 +8,11 @@ import picocli.CommandLine.Command;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static org.example.commands.FileFetcher.getAllFiles;
 import static org.example.commands.FileFetcher.getFiles;
 
 @Command(
@@ -46,32 +48,66 @@ public class ListCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        List<Path> allFiles = getFiles(
-                folderPath,
-                recursive,
-                dateCreated,
-                extension,
-                lessThanSize,
-                greaterThanSize,
-                FileType.FILE
-        );
+        List<Path> allFiles = new ArrayList<>();
+
+        // Determine if any filter is active (excluding recursive and filenameOnly)
+        boolean hasFilter = (dateCreated != null) ||
+                (extension != null && !extension.isEmpty()) ||
+                (lessThanSize > 0) ||
+                (greaterThanSize > 0);
+
+        if (hasFilter) {
+            // Any real filter → use filtered getFiles()
+            allFiles = getFiles(
+                    folderPath, recursive, dateCreated, extension,
+                    lessThanSize, greaterThanSize, FileType.FILE
+            );
+        } else if (recursive) {
+            // Only --recursive (no other filters) → get everything recursively
+            allFiles = getAllFiles(folderPath, true, FileType.FILE);
+        } else {
+            // No filters and no recursive → list only direct children (files + folders)
+            for (Path target : folderPath) {
+                Path resolved = target.toAbsolutePath().normalize();
+
+                if (!Files.exists(resolved)) {
+                    System.err.println("Warning: Path does not exist: " + resolved);
+                    continue;
+                }
+
+                if (Files.isRegularFile(resolved)) {
+                    allFiles.add(resolved);
+                } else if (Files.isDirectory(resolved)) {
+                    try (var stream = Files.newDirectoryStream(resolved)) {
+                        for (Path entry : stream) {
+                            if (Files.isRegularFile(entry) || Files.isDirectory(entry)) {
+                                allFiles.add(entry);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (allFiles.isEmpty()) {
-            System.out.println("No files matched your filters.");
+            System.out.println("No items found.");
             return 0;
         }
 
-        System.out.println("Found " + allFiles.size() + " file(s):\n");
-        for (Path file : allFiles) {
-            long sizeMB = Files.size(file) / (1024 * 1024);
-            String sizeStr = sizeMB > 0 ? sizeMB + " MB" : "< 1 MB";
-            System.out.printf("%s  (%s)%n",
-                    filenameOnly ? file.getFileName() : file,
-                    sizeStr);
+        System.out.println("Found " + allFiles.size() + " item(s):\n");
+
+        for (Path item : allFiles) {
+            String display = filenameOnly ? item.getFileName().toString() : item.toString();
+
+            if (Files.isRegularFile(item)) {
+                long sizeMB = Files.size(item) / (1024 * 1024);
+                String sizeStr = sizeMB > 0 ? sizeMB + " MB" : "< 1 MB";
+                System.out.printf("%s  (%s)%n", display, sizeStr);
+            } else {
+                System.out.printf("%s  <DIR>%n", display);
+            }
         }
 
         return 0;
     }
-
-
 }

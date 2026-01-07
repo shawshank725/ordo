@@ -11,7 +11,8 @@ import picocli.CommandLine;
                 RenameCommand.class,
                 ListCommand.class,
                 DeleteCommand.class,
-                TransferCommand.class
+                TransferCommand.class,
+                ExplorerCommand.class
         }
 )
 public class Ordo implements Runnable{

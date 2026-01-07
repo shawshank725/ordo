@@ -1,5 +1,6 @@
 package org.example.commands;
 
+import org.example.enumeration.FileTransfer;
 import org.example.enumeration.FileType;
 
 import java.io.IOException;
@@ -104,6 +105,48 @@ public class FileFetcher {
                     allFiles.add(file);
                 }
             }
+        }
+
+        return allFiles;
+    }
+
+    public static List<Path> getAllFiles(
+            List<Path> targets, boolean recursive, FileType type
+    ) throws IOException {
+        List<Path> allFiles = new ArrayList<>();
+
+        for (Path target : targets) {
+            Path resolved = target.toAbsolutePath().normalize();
+
+            if (!Files.exists(resolved)) {
+                System.err.println("Warning: Path does not exist: " + resolved);
+                continue;
+            }
+
+            List<Path> candidates = new ArrayList<>();
+
+            if (Files.isRegularFile(resolved)) {
+                candidates.add(resolved);
+            } else if (Files.isDirectory(resolved)) {
+                if (recursive) {
+                    Files.walk(resolved)
+                            .filter(p -> type == FileType.BOTH ||
+                                    (type == FileType.FILE && Files.isRegularFile(p)) ||
+                                    (type == FileType.DIRECTORY && Files.isDirectory(p)))
+                            .forEach(candidates::add);
+                } else {
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(resolved)) {
+                        for (Path entry : stream) {
+                            if (type == FileType.BOTH ||
+                                    (type == FileType.FILE && Files.isRegularFile(entry)) ||
+                                    (type == FileType.DIRECTORY && Files.isDirectory(entry))) {
+                                candidates.add(entry);
+                            }
+                        }
+                    }
+                }
+            }
+            allFiles.addAll(candidates);
         }
 
         return allFiles;
