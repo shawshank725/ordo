@@ -15,16 +15,13 @@ import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.example.commands.FileFetcher.getAllFiles;
 import static org.example.commands.FileFetcher.getFiles;
 
 @Command(
         name = "delete",
         mixinStandardHelpOptions = true,
-        description = """
-                Delete files matching filters (safe by default, moves to trash if possible)\
-                Usage: ordo delete [-hprVy] [--dry-run] [-fno] [-dc=<dateCreated>]
-                                   [-ext=<extension>] [-gsz=<greaterThanSize>]
-                                   [-lsz=<lessThanSize>] [<folderPath>...]"""
+        description = "Delete files matching filters (safe by default, moves to trash if possible)"
 )
 public class DeleteCommand implements Callable<Integer> {
 
@@ -66,10 +63,15 @@ public class DeleteCommand implements Callable<Integer> {
 
     private void deleteFilesFolder() throws IOException {
         // Get matching files (FileType.FILE → only files, not directories)
-        List<Path> files = getFiles(
-                folderPath, recursive, dateCreated, extension,
-                lessThanSize, greaterThanSize, FileType.FILE
-        );
+        boolean hasFilter = dateCreated != null || extension != null || lessThanSize > 0 || greaterThanSize > 0;
+
+        List<Path> files;
+        if (hasFilter) {
+            files = getFiles(folderPath, recursive, dateCreated, extension, lessThanSize, greaterThanSize, FileType.FILE);
+        } else {
+            // No filters → delete everything in scope
+            files = getAllFiles(folderPath, recursive, FileType.FILE);
+        }
 
         if (files.isEmpty()) {
             System.out.println("No files matched your filters.");

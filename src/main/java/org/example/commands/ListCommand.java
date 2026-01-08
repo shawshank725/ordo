@@ -18,10 +18,7 @@ import static org.example.commands.FileFetcher.getFiles;
 @Command(
         name = "list",
         mixinStandardHelpOptions = true,
-        description = """
-                List files meeting certain conditions
-                Usage: ordo list [-hrV] [-dc=<dateCreated>] [-ext=<extension>]
-                [-gsz=<greaterThanSize>] [-lsz=<lessThanSize>] [<folderPath>]"""
+        description = "List files meeting certain conditions"
 )
 public class ListCommand implements Callable<Integer> {
 

@@ -18,10 +18,7 @@ import static org.example.commands.FileFetcher.*;
 @Command(
         name = "transfer",
         mixinStandardHelpOptions = true,
-        description = """
-                Batch transfer files with certain conditions
-                Usage: ordo rename [-s] [-nn=<newNamePattern>] [-pfx=<prefix>] [-sfx=<suffix>]
-                [-t=<type>] <targets>..."""
+        description = "Batch transfer files with certain conditions"
 )
 public class TransferCommand implements Callable<Integer> {
 

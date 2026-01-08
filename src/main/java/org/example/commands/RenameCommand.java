@@ -18,10 +18,7 @@ import static org.example.commands.FileFetcher.*;
 @Command(
         name = "rename",
         mixinStandardHelpOptions = true,
-        description = """
-                Batch rename files with patterns
-                Usage: ordo rename [-s] [-nn=<newNamePattern>] [-pfx=<prefix>] [-sfx=<suffix>]
-                [-t=<type>] <targets>..."""
+        description = "Batch rename files with patterns"
 )
 public class RenameCommand implements Callable<Integer> {
 
