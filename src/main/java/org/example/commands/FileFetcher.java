@@ -165,4 +165,6 @@ public class FileFetcher {
     public static String[] breakNewNamePattern(String pattern){
         return pattern.split("\\{seq}");
     }
+
+    // code/method to get a folder path
 }

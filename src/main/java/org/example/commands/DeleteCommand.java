@@ -5,6 +5,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,8 +53,8 @@ public class DeleteCommand implements Callable<Integer> {
     @Option(names = {"-fno", "--filenameonly"}, description = "Show only file names in output")
     private boolean filenameOnly;
 
-    @Option(names = {"-def", "--deleteemptyfolder"}, description = "Delete blank folders")
-    private boolean deleteEmptyFolder;
+    @Option(names = {"-def", "--deletefolders"}, description = "Delete folders as well")
+    private boolean deleteFolders;
 
     @Override
     public Integer call() throws Exception {
@@ -62,35 +63,42 @@ public class DeleteCommand implements Callable<Integer> {
     }
 
     private void deleteFilesFolder() throws IOException {
-        // Get matching files (FileType.FILE → only files, not directories)
         boolean hasFilter = dateCreated != null || extension != null || lessThanSize > 0 || greaterThanSize > 0;
 
-        List<Path> files;
+        // based on filter get list.
+        List<Path> allFiles;
         if (hasFilter) {
-            files = getFiles(folderPath, recursive, dateCreated, extension, lessThanSize, greaterThanSize, FileType.FILE);
+            // get the files based on filters applied using the method: getFiles
+            allFiles = getFiles(folderPath, recursive, dateCreated, extension,
+                    lessThanSize, greaterThanSize, FileType.BOTH);
         } else {
-            // No filters → delete everything in scope
-            files = getAllFiles(folderPath, recursive, FileType.FILE);
+            // no filter means that entire folder is to be deleted. along with any other files provided.
+            allFiles = getAllFiles(folderPath, recursive, FileType.BOTH);
         }
 
-        if (files.isEmpty()) {
-            System.out.println("No files matched your filters.");
-        } else {
-            System.out.printf("Found %d file(s) to delete:%n%n", files.size());
+        if (allFiles.isEmpty()) {
+            System.out.println("No files or folders matched.");
+            return;
+        }
 
-            for (Path file : files) {
-                long sizeMB = Files.size(file) / (1024 * 1024);
+        // Show what will be deleted
+        System.out.printf("Found %d item(s):%n%n", allFiles.size());
+        for (Path item : allFiles) {
+            String display = filenameOnly ? item.getFileName().toString() : item.toString();
+            if (Files.isDirectory(item)) {
+                System.out.printf("%s  <DIR>%n", display);
+            } else {
+                long sizeMB = Files.size(item) / (1024 * 1024);
                 String sizeStr = sizeMB > 0 ? sizeMB + " MB" : "< 1 MB";
-                String display = filenameOnly ? file.getFileName().toString() : file.toString();
                 System.out.printf("%s  (%s)%n", display, sizeStr);
             }
-            System.out.println();
         }
+        System.out.println();
 
-        // Confirmation prompt (skip if -y or no files)
-        if (!yes && !files.isEmpty()) {
-            System.out.printf("Delete %d file(s)%s? Continue? (y/N): ",
-                    files.size(),
+        // Confirmation prompt if not -y
+        if (!yes) {
+            System.out.printf("Delete %d item(s)%s? Continue? (y/N): ",
+                    allFiles.size(),
                     permanent ? " permanently (cannot be undone)" : "");
             String response = new Scanner(System.in).nextLine().trim();
             if (!response.equalsIgnoreCase("y")) {
@@ -99,89 +107,89 @@ public class DeleteCommand implements Callable<Integer> {
             }
         }
 
-        // === 1. Delete the files ===
-        int fileDeleted = 0;
-        int fileFailed = 0;
+        int deleted = 0;
+        int failed = 0;
 
-        for (Path file : files) {
-            try {
-                if (permanent) {
-                    Files.delete(file);
-                } else {
-                    // Safe delete: move to ~/.ordo-trash
-                    Path trashDir = Path.of(System.getProperty("user.home"), ".ordo-trash");
-                    Files.createDirectories(trashDir);
+        // Sort bottom-up for safe recursive delete
+        allFiles.sort(java.util.Comparator.comparingInt(p -> -p.getNameCount()));
 
-                    Path dest = trashDir.resolve(file.getFileName());
+        Path trashDir = Path.of(System.getProperty("user.home"), ".ordo-trash");
+        // now we check if permanent delete is added or not.
+        // first condition is permanent is true
+        if (permanent) {
+            for (Path path : allFiles) {
+                try {
+                    Files.delete(path);
+                    deleted++;
+                } catch (IOException e) {
+                    System.err.printf("Failed to permanently delete: %s (%s)%n",
+                            filenameOnly ? path.getFileName() : path, e.getMessage());
+                    failed++;
+                }
+            }
+        }
+        // the delete is temporary not permanent. so detect the OS and move to trash.
+        else {
+
+            Files.createDirectories(trashDir);
+
+            for (Path path : allFiles) {
+                try {
+                    Path dest = trashDir.resolve(path.getFileName());
                     int counter = 1;
                     while (Files.exists(dest)) {
-                        String name = file.getFileName().toString();
+                        String name = path.getFileName().toString();
                         dest = trashDir.resolve(name + "." + counter);
                         counter++;
                     }
-                    Files.move(file, dest);
+                    Files.move(path, dest);
+                    deleted++;
+                } catch (IOException e) {
+                    System.err.printf("Failed to move to trash: %s (%s)%n",
+                            filenameOnly ? path.getFileName() : path, e.getMessage());
+                    failed++;
                 }
-                fileDeleted++;
-            } catch (IOException e) {
-                System.err.printf("Failed to delete file: %s (%s)%n", file.getFileName(), e.getMessage());
-                fileFailed++;
             }
         }
 
-        // === 2. Delete empty folders (only if requested and recursive) ===
-        AtomicInteger folderDeleted = new AtomicInteger();
-        if (deleteEmptyFolder && recursive) {
-            // Collect all parent directories from the original targets
-            List<Path> dirsToCheck = new ArrayList<>();
-            for (Path target : folderPath) {
-                Path resolved = target.toAbsolutePath().normalize();
+        // === Delete empty folders if requested (only after files are gone) ===
+        if (deleteFolders && recursive) {
+            List<Path> roots = new ArrayList<>(folderPath);
+            for (Path root : roots) {
+                Path resolved = root.toAbsolutePath().normalize();
                 if (Files.isDirectory(resolved)) {
-                    dirsToCheck.add(resolved);
-                }
-            }
-
-            // Walk each directory tree bottom-up and delete empty dirs
-            for (Path root : dirsToCheck) {
-                Files.walk(root)
-                        .sorted(java.util.Comparator.reverseOrder()) // bottom-up
-                        .filter(Files::isDirectory)
-                        .forEach(dir -> {
-                            try {
-                                if (Files.list(dir).findAny().isEmpty()) {
-                                    if (permanent) {
-                                        Files.delete(dir);
-                                    } else {
-                                        // Move empty folder to trash too
-                                        Path trashDir = Path.of(System.getProperty("user.home"), ".ordo-trash");
-                                        Path dest = trashDir.resolve(dir.getFileName());
-                                        Files.move(dir, dest);
+                    Files.walk(resolved)
+                            .sorted(java.util.Comparator.reverseOrder())
+                            .filter(Files::isDirectory)
+                            .forEach(dir -> {
+                                try {
+                                    if (Files.list(dir).findAny().isEmpty()) {
+                                        if (permanent) {
+                                            Files.delete(dir);
+                                        } else {
+                                            Path trashDest = trashDir.resolve(dir.getFileName());
+                                            Files.move(dir, trashDest);
+                                        }
+                                        System.out.printf("Deleted empty folder: %s%n", dir.getFileName());
                                     }
-                                    folderDeleted.getAndIncrement();
+                                } catch (IOException ignored) {
+                                    // Not empty or permission issue — skip
                                 }
-                            } catch (IOException ignored) {
-                                // Directory not empty or permission issue — skip
-                            }
-                        });
+                            });
+                }
             }
         }
 
-        // === Final summary ===
+        // Final report
         System.out.println();
-        if (fileDeleted > 0 || folderDeleted.get() > 0) {
-            System.out.printf("Deleted: %d file(s)", fileDeleted);
-            if (folderDeleted.get() > 0) {
-                System.out.printf(" and %d empty folder(s)", folderDeleted);
-            }
-            System.out.println();
-            if (fileFailed > 0) {
-                System.out.printf("%d file(s) failed to delete.%n", fileFailed);
-            }
-        } else if (!files.isEmpty()) {
-            System.out.println("No files were deleted (all operations failed).");
-        } else if (deleteEmptyFolder && folderDeleted.get() > 0) {
-            System.out.printf("Deleted %d empty folder(s).%n", folderDeleted);
-        } else {
-            System.out.println("Nothing to delete.");
+        if (deleted > 0) {
+            System.out.printf("Successfully deleted %d item(s).%n", deleted);
+        }
+        if (failed > 0) {
+            System.out.printf("%d item(s) failed.%n", failed);
+        }
+        if (deleted == 0 && failed == 0) {
+            System.out.println("Nothing was deleted.");
         }
     }
 }
