@@ -39,9 +39,53 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>native</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>0.11.3</version>
+            <executions>
+              <execution>
+                <id>build-native</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <configuration>
+                  <mainClass>org.example.Main</mainClass>
+                  <imageName>ordo</imageName>
+                  <buildArgs>--no-fallback
+                                --report-unsupported-elements-at-runtime</buildArgs>
+                </configuration>
+              </execution>
+            </executions>
+            <configuration>
+              <mainClass>org.example.Main</mainClass>
+              <imageName>ordo</imageName>
+              <buildArgs>--no-fallback
+                                --report-unsupported-elements-at-runtime</buildArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  <dependencies>
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli-codegen</artifactId>
+      <version>4.7.7</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>25</maven.compiler.target>
     <maven.compiler.source>25</maven.compiler.source>
+    <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
   </properties>
 </project>

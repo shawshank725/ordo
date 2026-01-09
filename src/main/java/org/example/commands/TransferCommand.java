@@ -23,9 +23,9 @@ import static org.example.commands.FileFetcher.*;
 public class TransferCommand implements Callable<Integer> {
 
     @Parameters(index = "0", arity = "1..*", description = "Files or glob patterns to rename")
-    private List<Path> from;
+    private List<Path> from = List.of(Path.of("."));
 
-    @Parameters(index = "1", arity = "1", description = "Destination folder")
+    @Option(names={"-d", "--destination"}, description = "Destination folder")
     private Path destination;
 
     @Option(names = {"-m", "--move"}, description = "Move files (cut - delete source)")

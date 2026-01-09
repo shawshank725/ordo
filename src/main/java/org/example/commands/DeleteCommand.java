@@ -1,23 +1,23 @@
 package org.example.commands;import org.example.enumeration.FileType;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;import java.io.File;
+import picocli.CommandLine.Parameters;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;import static org.example.commands.FileFetcher.getAllFiles;
-import static org.example.commands.FileFetcher.getFiles;@Command(
+
+@Command(
         name = "delete",
         mixinStandardHelpOptions = true,
         description = "Delete files matching filters (safe by default, moves to trash if possible)"
 )
 public class DeleteCommand implements Callable<Integer> {@Parameters(index = "0", arity = "0..*", description = "Folder path(s) or file globs (default: current directory)")
-private List<Path> folderPath = List.of(Path.of("."));
+private List<Path> targets = List.of(Path.of("."));
 
     @Option(names = {"-r", "--recursive"}, description = "Search for files and folders recursively inside directories")
     private boolean recursive;
@@ -37,82 +37,123 @@ private List<Path> folderPath = List.of(Path.of("."));
     @Option(names = {"-p", "--permanent"}, description = "Permanently delete (bypass trash/recycle bin)")
     private boolean permanent;
 
-    @Option(names = {"-y", "--yes"}, description = "Skip confirmation prompt")
-    private boolean yes;
-
     @Option(names = {"-fno", "--filenameonly"}, description = "Show only file names in output")
     private boolean filenameOnly;
 
-    @Option(names = {"-def", "--deletefolders"}, description = "Delete folders as well")
+    @Option(names = {"-df", "--deletefolders"}, description = "Delete folders as well")
     private boolean deleteFolders;
 
     @Override
     public Integer call() throws Exception {
-        deleteFilesFolder();
+        deleteFilesAndFolders();
         return 0;
     }
 
-    private void deleteFilesFolder() throws IOException {
-        boolean hasFilter = dateCreated != null || extension != null || lessThanSize > 0 || greaterThanSize > 0;
+    private void deleteFilesAndFolders() throws IOException {
+        boolean hasFilters = dateCreated != null || extension != null
+                || lessThanSize > 0 || greaterThanSize > 0;
 
-        int filesDeleted, foldersDeleted, filesFailedToDelete, foldersFailedToDelete = 0;
+        System.out.println("Targets: " + targets);
+        System.out.println("Has filters: " + hasFilters);
+        System.out.println("Recursive: " + recursive);
+        System.out.println("Delete folders: " + deleteFolders);
+        System.out.println("Permanent: " + permanent);
 
-        // based on filter get list.
-        List<Path> allFiles;
-        if (hasFilter){
-            // get the files based on filters applied using the method: getFiles
-            allFiles = getFiles(folderPath ,recursive,dateCreated,extension,lessThanSize,greaterThanSize,FileType.BOTH);
+        // ── 1. Collect items to delete ──────────────────────────────────────
+        List<Path> itemsToDelete;
+        if (hasFilters) {
+            // Filtered search → only files (folders are never filtered/deleted this way)
+            itemsToDelete = FileFetcher.getFiles(targets, recursive, dateCreated,
+                    extension, lessThanSize, greaterThanSize, FileType.FILE);
+            System.out.println("Found " + itemsToDelete.size() + " matching files");
+        } else {
+            // No filters → delete everything (files + folders if allowed)
+            itemsToDelete = FileFetcher.getAllFiles(targets, recursive, FileType.BOTH);
+            System.out.println("Found " + itemsToDelete.size() + " total items (files + folders)");
         }
-        else {
-            // no filter means that entire folder is to be deleted. along with any other files provided.
-            allFiles = getAllFiles(folderPath,recursive, FileType.BOTH);
+
+        if (itemsToDelete.isEmpty()) {
+            System.out.println("Nothing to delete.");
+            return;
         }
 
-        // since the target (folder path) may contain standalone files, they also need to be added.
-        allFiles = allFiles.stream()
-                .filter(Files::isRegularFile)
-                .toList();
+        // ── 2. Safety check: folders without -df ────────────────────────────
+        boolean hasFolders = itemsToDelete.stream().anyMatch(Files::isDirectory);
+        if (hasFolders && !deleteFolders && !hasFilters) {
+            System.err.println("Error: Found folders but -df/--deletefolders not used.");
+            System.err.println("Use -df if you really want to delete folders.");
+            return;
+        }
 
-        // now we check if permanent delete is added or not.
-        // first condition is permanent is true
-        if (permanent){
-            // ask user if they want to do this.
-            System.out.printf("Total files found: %d%n", allFiles.size());
+        // ── 3. Confirmation (always ask — very important!) ──────────────────
+        long fileCount = itemsToDelete.stream().filter(Files::isRegularFile).count();
+        long folderCount = itemsToDelete.size() - fileCount;
 
-            Scanner sc = new Scanner(System.in);
-            System.out.println("Do you want to delete this? this action cannot be reversed! (y/N)");
-            String userAnswer = sc.nextLine();
-            if (userAnswer.equalsIgnoreCase("y")) {
-                // files can be deleted permanently but the user may want to keep just the folders.
-                // by default the code keeps folders so delete as such. no extra code.
-                // first if condition is that folders are to be deleted
-                if (deleteFolders){
-                    // deleting a folder means deleting its
-                    // files as well. so just get the containing
-                    // folder of the file and delete it.
-                    // use the folderPath list (not the all files list)
-                    for (Path path: folderPath){
-                        Files.delete(path);
-                    }
+        System.out.printf("About to %s %d file(s) and %d folder(s).%n",
+                permanent ? "PERMANENTLY delete" : "move to trash", fileCount, folderCount);
+
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Continue? (y/N): ");
+        if (!sc.nextLine().trim().equalsIgnoreCase("y")) {
+            System.out.println("Aborted.");
+            return;
+        }
+
+        // ── 4. Actual deletion ──────────────────────────────────────────────
+        int filesOk = 0, filesFail = 0;
+        int foldersOk = 0, foldersFail = 0;
+
+        for (Path path : itemsToDelete) {
+            boolean isDir = Files.isDirectory(path);
+
+            if (isDir && !deleteFolders) continue;  // skip folders unless explicitly allowed
+
+            try {
+                if (permanent) {
+                    Files.delete(path);  // throws if directory not empty → use deleteRecursively if needed
+                } else {
+                    moveToTrash(path);
                 }
-                // second else is that folders shouldn't be deleted. default code. nothing fancy here.
-                else {
-                    for (Path path: allFiles){
-                        Files.delete(path.toAbsolutePath());
-                        System.out.println("file deleted");
-                    }
+
+                if (isDir) {
+                    foldersOk++;
+                    System.out.println((permanent ? "Deleted" : "Trashed") + " folder: " + path);
+                } else {
+                    filesOk++;
+                    System.out.println((permanent ? "Deleted" : "Trashed") + " file:   " + path);
                 }
-            }
-            // user selects no.
-            else {
-                System.out.println("Operation aborted.");
+
+            } catch (Exception e) {
+                if (isDir) foldersFail++;
+                else filesFail++;
+                System.err.println("Failed to " + (permanent ? "delete" : "trash") + ": " + path);
+                System.err.println("  → " + e.getMessage());
             }
         }
 
-        // the delete is temporary not permanent. so detect the OS and move to trash.
-        else {
+        // ── 5. Final report ─────────────────────────────────────────────────
+        System.out.println("\n───── DELETE SUMMARY ─────");
+        System.out.printf("Files   successful: %d   failed: %d%n", filesOk, filesFail);
+        System.out.printf("Folders successful: %d   failed: %d%n", foldersOk, foldersFail);
+        System.out.println("──────────────────────────");
 
+    }
+
+    private void moveToTrash(Path path) throws IOException {
+        Path trashDir = Path.of(System.getProperty("user.home"), ".ordo-trash");
+        Files.createDirectories(trashDir);
+
+        Path dest = trashDir.resolve(path.getFileName());
+        int counter = 1;
+        while (Files.exists(dest)) {
+            String name = path.getFileName().toString();
+            String base = name.contains(".") ? name.substring(0, name.lastIndexOf('.')) : name;
+            String ext  = name.contains(".") ? name.substring(name.lastIndexOf('.')) : "";
+            dest = trashDir.resolve(base + "." + counter + ext);
+            counter++;
         }
 
-    }}
+        Files.move(path, dest);
+    }
 
+}

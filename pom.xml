@@ -10,7 +10,7 @@
     <build>
         <finalName>ordo</finalName>
         <plugins>
-            <!-- Shade plugin: creates fat JAR with all dependencies inside -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -44,12 +44,49 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native.maven.plugin.version}</version>
+                        <!-- Remove <extensions>true</extensions> if still present – it's optional and can cause issues -->
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>  <!-- keep this, or try to compile if still problems -->
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- REQUIRED: This fixes your error -->
+                            <mainClass>org.example.Main</mainClass>
 
+                            <!-- Optional but recommended: sets the output binary name -->
+                            <imageName>ordo</imageName>
+
+                            <!-- Optional: helpful defaults for CLI tools -->
+                            <buildArgs>
+                                --no-fallback
+                                --report-unsupported-elements-at-runtime  <!-- prints warnings for reflection issues -->
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
     </properties>
 
     <dependencies>
@@ -57,6 +94,17 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.7.7</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/info.picocli/picocli-codegen -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli-codegen</artifactId>
+            <version>4.7.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>2.4.1</version>
         </dependency>
     </dependencies>
 </project>
