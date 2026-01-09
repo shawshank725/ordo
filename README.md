@@ -89,3 +89,30 @@ mvn -Pnative package
 ```bash
 ./target/ordo
 ```
+
+## Known Issues & Workarounds
+
+### Native executable (`./ordo`) shows incomplete `--help` output for subcommands
+
+**Symptom**  
+`./ordo rename --help` shows only `-h/-V` options, missing your custom flags (like `-r`, `-dc`, etc.).  
+The JAR version (`java -jar ordo.jar rename --help`) works fine.
+
+**Cause**  
+GraalVM native-image removes reflection info unless explicitly registered. Picocli's option discovery for subcommands relies on it.
+
+**Fix** (already included in the project)  
+The `src/main/resources/META-INF/native-image/reflect-config.json` file registers all subcommand classes + fields.  
+If you fork/build from source and still see this:
+- Make sure the file exists and has `"allDeclaredFields": true` for each subcommand
+- Clean & rebuild: `mvn clean package -Pnative`
+
+This is a common GraalVM + Picocli gotcha — reported in several issues (e.g., picocli#1916, #2357).  
+The config file is the standard workaround.
+
+### Other native build tips
+- First native build is slow (3–10 min) — normal.
+- Need `build-essential` + `zlib1g-dev` on Linux.
+- If "no constructor" error → add subcommand classes to `reflect-config.json` (already done here).
+
+Feel free to open an issue if something breaks — happy to help!
