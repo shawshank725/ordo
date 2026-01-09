@@ -1,7 +1,6 @@
 package org.example.commands;
 
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
 @CommandLine.Command(
         name = "ordo",
@@ -17,8 +16,6 @@ import picocli.CommandLine.Mixin;
         }
 )
 public class Ordo implements Runnable{
-    @Mixin
-    private CommandLine.HelpCommand helpCommand;
 
     @Override
     public void run() {
@@ -33,6 +30,7 @@ public class Ordo implements Runnable{
 \u001B[0m
 """);
         System.out.println("Welcome to Ordo, son.");
-
+        System.out.println("Batch rename, delete, transfer — whatever mess you made.");
+        System.out.println("More weapons incoming. Start swinging, kid.");
     }
 }

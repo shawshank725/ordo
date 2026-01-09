@@ -1,4 +1,6 @@
-package org.example.commands;import org.example.enumeration.FileType;
+package org.example.commands;
+
+import org.example.enumeration.FileType;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -17,7 +19,7 @@ import java.util.concurrent.Callable;
         description = "Delete files matching filters (safe by default, moves to trash if possible)"
 )
 public class DeleteCommand implements Callable<Integer> {@Parameters(index = "0", arity = "0..*", description = "Folder path(s) or file globs (default: current directory)")
-private List<Path> targets = List.of(Path.of("."));
+    private List<Path> targets = List.of(Path.of("."));
 
     @Option(names = {"-r", "--recursive"}, description = "Search for files and folders recursively inside directories")
     private boolean recursive;

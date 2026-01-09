@@ -1,5 +1,6 @@
 package org.example.commands;
 
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
