@@ -4,18 +4,34 @@ Ordo is a cross-platform command-line tool for advanced file and directory manag
 
 Designed for developers, power users, and anyone managing large collections of files (photos, documents, project assets, downloads), Ordo emphasizes usability, predictability, and protection against accidental data loss.
 
-Note: This tool is in development and is being checked for any unexpected behaviour or issues. If you find any issue, open one in this repository.
-
 ## Features
 
 - Smart file listing with filters (extension, size, creation date, recursive)
 - Powerful batch renaming with patterns, sequential numbering, prefix/suffix, and automatic collision handling
 - Safe file transfer (move/copy) with filtering and destination validation
 - Configurable deletion: safe (moves to trash) by default, optional permanent delete
-- Dry-run support and confirmation prompts for destructive operations
 - Clean, colored, and structured output
-- Single executable JAR (future native binaries via GraalVM planned)
+- Single executable JAR and Native binaries via GraalVM can be built
+- Option to open any existing folder
 
+## Project Scope & Future Plans
+
+**Current scope**  
+Ordo is focused on **basic but powerful file operations** in the terminal:  
+- List files/folders with filters  
+- Batch rename (patterns, prefix/suffix, sequencing)  
+- Delete (with filters, trash or permanent, recursive)  
+- Transfer/move/copy files  
+- Open files/folders with system default apps  
+
+Everything is safe by default (confirmation prompts, trash support) and optimized for speed (native builds via GraalVM).
+
+**What's coming next**  
+- Advanced features: OCR for images, automatic organization by type/date/content, smart filters  
+- GUI version (desktop app wrapper)  
+- Community-driven additions — if enough people want a feature, it gets prioritized  
+
+If you have ideas, suggestions, or want something specific — open an issue or drop a comment.  
 
 ## Build and Run
 
@@ -88,4 +104,5 @@ The config file is the standard workaround.
 - If "no constructor" error → add subcommand classes to `reflect-config.json` (already done here).
 
 Feel free to open an issue if something breaks — happy to help!
+
 
