@@ -16,48 +16,97 @@ Note: This tool is in development and is being checked for any unexpected behavi
 - Clean, colored, and structured output
 - Single executable JAR (future native binaries via GraalVM planned)
 
+
 ## Build and Run
 
-### Building JAR file
+### Building the JAR file
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/shawshank725/ordo.git
 cd ordo
 ```
-2. Build project using Maven:
+
+2. Build the project using Maven:
 ```bash
 mvn clean package
 ```
-3. This will produce an executable JAR file in the target directory.
-4. If using Linux Distro, try using alias ordo="java -jar path-to-ordo-jar-file-in-your-system".
-5. Type in terminal:
+
+3. This will generate an executable JAR file inside the `target/` directory.
+
+4. (Optional – Linux/macOS) Create an alias for easier usage:
+```bash
+alias ordo="java -jar /path/to/ordo.jar"
+```
+
+5. Verify the installation:
 ```bash
 ordo --help
 ```
+
+---
+
 ### Installing GraalVM
-1. GraalVM is used to create an executable file for this CLI tool. To build it from source, we need GraalVM.
-2. Go to GraalVM official website: https://www.graalvm.org/downloads/.
-3. Select your OS and download the setup. For linux distros, a .tar file will be downloaded.
-4. Open the folder where the GraalVM setup is present and extract it.
-5. For linux distros, open the terminal in the same folder, type: nano ~/.bashrc. Scroll to the very bottom and add the lines:
+
+GraalVM is used to build a standalone native executable for this CLI tool.
+
+1. Go to the official GraalVM website:  
+   https://www.graalvm.org/downloads/
+
+2. Select your operating system and download the appropriate distribution.  
+   On Linux, this will typically be a `.tar.gz` archive.
+
+3. Extract the downloaded archive:
 ```bash
-export JAVA_HOME=/home/shashank/graalvm-jdk-25.0.1+8.1
+tar -xvf graalvm-*.tar.gz
+```
+
+4. Set up environment variables. Open your shell configuration file:
+```bash
+nano ~/.bashrc
+```
+
+5. Add the following lines at the end (update the path accordingly):
+```bash
+export JAVA_HOME=/path/to/graalvm
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
-6. Save the file. To verify it, write java --version. The output would be similar to this:
-```bash
-java 25.0.1 2025-10-21 LTS
-Java(TM) SE Runtime Environment Oracle GraalVM 25.0.1+8.1 (build 25.0.1+8-LTS-jvmci-b01)
-Java HotSpot(TM) 64-Bit Server VM Oracle GraalVM 25.0.1+8.1 (build 25.0.1+8-LTS-jvmci-b01, mixed mode, sharing)
-```
-7. We need to make sure native image is also installed. Try the command:
-native-image --version
-8. The output would be similar to this:
-native-image 25.0.1 2025-10-21
-GraalVM Runtime Environment Oracle GraalVM 25.0.1+8.1 (build 25.0.1+8-LTS-jvmci-b01)
-Substrate VM Oracle GraalVM 25.0.1+8.1 (build 25.0.1+8-LTS, serial gc, compressed references)
-9. Once this is all done, move to next section
 
-### Building an executable file (standalone executable binary)
-1. First run the  command: mvn clean package and then mvn -Pnative package. The first time running the command will take some time. Once this is done, go to Ordo/target folder to get ordo executable.
-2. To run it on Linux distros, open the terminal and write: ./ordo.
+6. Reload the configuration:
+```bash
+source ~/.bashrc
+```
+
+7. Verify the installation:
+```bash
+java --version
+```
+
+Expected output (example):
+```text
+Java(TM) SE Runtime Environment Oracle GraalVM
+```
+
+8. Verify that `native-image` is installed:
+```bash
+native-image --version
+```
+
+---
+
+### Building a Native Executable (Standalone Binary)
+
+1. Build the project and generate the native image:
+```bash
+mvn clean package
+mvn -Pnative package
+```
+
+> Note: The first native build may take several minutes.
+
+2. Once completed, the executable will be available in the `target/` directory.
+
+3. Run the executable (Linux):
+```bash
+./target/ordo
+```
