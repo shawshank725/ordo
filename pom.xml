@@ -4,46 +4,89 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
-    <artifactId>Ordo</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <groupId>io.github.shawshank725</groupId>
+    <artifactId>ordo</artifactId>
+    <version>1.0.0</version>
+
+    <name>Ordo</name>
+    <description>CLI tool built using Picocli</description>
+    <url>https://github.com/shawshank725/ordo</url>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <central-publishing-plugin.version>0.9.0</central-publishing-plugin.version>
+        <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
+    </properties>
+
     <build>
-        <finalName>ordo</finalName>
         <plugins>
 
             <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${central-publishing-plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>published</waitUntil>
+<!--                    <waitPollingInterval>PT30S</waitPollingInterval>-->
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>attach-sources</id>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.example.Main</mainClass>  <!-- CHANGE IF YOUR MAIN CLASS IS DIFFERENT -->
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Javadoc - required by Maven Central -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- GPG signing - required -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
+
+    <!-- Native profile - only native stuff here -->
     <profiles>
         <profile>
             <id>native</id>
@@ -53,27 +96,21 @@
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
                         <version>${native.maven.plugin.version}</version>
-                        <!-- Remove <extensions>true</extensions> if still present – it's optional and can cause issues -->
                         <executions>
                             <execution>
                                 <id>build-native</id>
                                 <goals>
-                                    <goal>compile-no-fork</goal>  <!-- keep this, or try to compile if still problems -->
+                                    <goal>compile-no-fork</goal>
                                 </goals>
                                 <phase>package</phase>
                             </execution>
                         </executions>
                         <configuration>
-                            <!-- REQUIRED: This fixes your error -->
                             <mainClass>org.example.Main</mainClass>
-
-                            <!-- Optional but recommended: sets the output binary name -->
                             <imageName>ordo</imageName>
-
-                            <!-- Optional: helpful defaults for CLI tools -->
                             <buildArgs>
                                 --no-fallback
-                                --report-unsupported-elements-at-runtime  <!-- prints warnings for reflection issues -->
+                                --report-unsupported-elements-at-runtime
                             </buildArgs>
                         </configuration>
                     </plugin>
@@ -82,24 +119,17 @@
         </profile>
     </profiles>
 
-    <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <native.maven.plugin.version>0.11.3</native.maven.plugin.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.7.7</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/info.picocli/picocli-codegen -->
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli-codegen</artifactId>
             <version>4.7.7</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.fusesource.jansi</groupId>
@@ -107,4 +137,27 @@
             <version>2.4.1</version>
         </dependency>
     </dependencies>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>shashank</id>
+            <name>Shashank Verma</name>
+            <email>vermashashank070205@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/shawshank725/ordo.git</connection>
+        <developerConnection>scm:git:ssh://github.com/shawshank725/ordo.git</developerConnection>
+        <url>https://github.com/shawshank725/ordo</url>
+    </scm>
+
 </project>
