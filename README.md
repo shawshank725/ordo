@@ -5,13 +5,11 @@
 
 </div>
 
-
-  [![Download Latest Release](https://img.shields.io/badge/Download%20Latest-brightgreen?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shawshank725/ordo/releases/latest) [![Maven Central](https://img.shields.io/maven-central/v/io.github.shawshank725/ordo?style=for-the-badge&logo=apache-maven&logoColor=white&color=orange)](https://central.sonatype.com/artifact/io.github.shawshank725/ordo)
-
 Ordo is a cross-platform command-line tool for advanced file and directory management. Built in Java with Picocli, it offers safe and powerful batch operations including listing, renaming, transferring (move/copy), and deletion with comprehensive filtering and safety mechanisms.
 
 Designed for developers, power users, and anyone managing large collections of files (photos, documents, project assets, downloads), Ordo emphasizes usability, predictability, and protection against accidental data loss.
 
+  [![Download Latest Release](https://img.shields.io/badge/Download%20Latest-brightgreen?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shawshank725/ordo/releases/latest) [![Maven Central](https://img.shields.io/maven-central/v/io.github.shawshank725/ordo?style=for-the-badge&logo=apache-maven&logoColor=white&color=orange)](https://central.sonatype.com/artifact/io.github.shawshank725/ordo)
 ## Features
 
 - Smart file listing with filters (extension, size, creation date, recursive)
@@ -239,6 +237,7 @@ Batch transfer files with certain conditions
 ```
 
 Feel free to open an issue if something breaks — happy to help!
+
 
 
 
