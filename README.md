@@ -20,7 +20,7 @@ Designed for developers, power users, and anyone managing large collections of f
 - Single executable JAR and Native binaries via GraalVM can be built
 - Option to open any existing folder
 
-## Project Scope & Future Plans
+## Project Scope
 
 **Current scope**  
 Ordo is focused on **basic but powerful file operations** in the terminal:  
@@ -237,6 +237,7 @@ Batch transfer files with certain conditions
 ```
 
 Feel free to open an issue if something breaks — happy to help!
+
 
 
 
