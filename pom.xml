@@ -6,7 +6,7 @@
 
     <groupId>io.github.shawshank725</groupId>
     <artifactId>ordo</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>Ordo</name>
     <description>CLI tool built using Picocli</description>
