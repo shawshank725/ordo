@@ -24,13 +24,6 @@ Ordo is focused on **basic but powerful file operations** in the terminal:
 - Transfer/move/copy files  
 - Open files/folders with system default apps  
 
-Everything is safe by default (confirmation prompts, trash support) and optimized for speed (native builds via GraalVM).
-
-**What's coming next**  
-- Advanced features: OCR for images, automatic organization by type/date/content, smart filters  
-- GUI version (desktop app wrapper)  
-- Community-driven additions — if enough people want a feature, it gets prioritized  
-
 If you have ideas, suggestions, or want something specific — open an issue or drop a comment.  
 
 ## Build and Run
@@ -137,10 +130,108 @@ Batch rename files with patterns
                      Add suffix to original names
   -V, --version      Print version information and exit.
 ```
-- 
-- 
+- For example, to rename all files in a folder (including subfolders) and a separate file, a new name pattern can be provided, with prefix and suffix as well. `ordo rename bro/ file.txt --newname="file {seq}" -s -r`
+
+### Delete Command
+- Used to delete multiple files based on a filter.
+- Main command is `ordo delete`. To get help, write: `ordo delete --help`.
+- The options used are:
+```bash
+Usage: ordo delete [-hprV] [-df] [-fno] [-dc=<dateCreated>] [-ext=<extension>]
+                   [-gsz=<greaterThanSize>] [-lsz=<lessThanSize>] [<targets>...]
+Delete files matching filters (safe by default, moves to trash if possible)
+      [<targets>...]         Folder path(s) or file globs (default: current
+                               directory)
+      -dc, --datecreated=<dateCreated>
+                             Filter by creation date (YYYY-MM-DD)
+      -df, --deletefolders   Delete folders as well
+      -ext, --extension=<extension>
+                             Filter by file extension
+      -fno, --filenameonly   Show only file names in output
+      -gsz, --greaterthansize=<greaterThanSize>
+                             Filter files larger than size (in MB)
+  -h, --help                 Show this help message and exit.
+      -lsz, --lessthansize=<lessThanSize>
+                             Filter files smaller than size (in MB)
+  -p, --permanent            Permanently delete (bypass trash/recycle bin)
+  -r, --recursive            Search for files and folders recursively inside
+                               directories
+  -V, --version              Print version information and exit.
+```
+- The filters can be applied the same way we do in rename command.
+
+### List Command
+- Used to list files in a folder. Works the same way Linux's `ls` does.
+- Main command is `ordo list`. By default it lists files in the current directory. Options can be provided like extensions, size, etc.
+- Usage:
+```bash
+Usage: ordo list [-hrV] [-fno] [-dc=<dateCreated>] [-ext=<extension>]
+                 [-gsz=<greaterThanSize>] [-lsz=<lessThanSize>]
+                 [<folderPath>...]
+List files meeting certain conditions
+      [<folderPath>...]      Folder path
+      -dc, --datecreated=<dateCreated>
+                             Adding date to filter the files and folders.
+      -ext, --extension=<extension>
+                             Extension to filter out the files.
+      -fno, --filenameonly   Adding this prints only the file names (skips the
+                               folder name).
+      -gsz, --greaterthansize=<greaterThanSize>
+                             Filter out files and folders having size greater
+                               than the one provided.
+  -h, --help                 Show this help message and exit.
+      -lsz, --lessthansize=<lessThanSize>
+                             Filter out files and folders having size less than
+                               the one provided.
+  -r, --recursive            Recursive means that any folder and subsequent
+                               subfolders will be affected.
+  -V, --version              Print version information and exit.
+```
+
+### Open command
+- Used to open up some folder in the system's default file manager.
+- If folder is not found, appropriate error is given. Providing no arguments will open the current working directory.
+- Usage:
+```bash
+Usage: ordo open [-hV] [<path>]
+Open a file or folder using the system default application
+      [<path>]    File or folder path to open (default: current directory)
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+```
+
+### Transfer Command
+- Used to transfer files to a target folder.
+- It can either move (cut) or copy files entirely.
+- Usage:
+```bash
+Usage: ordo transfer [-chmrV] [-d=<destination>] [-dc=<dateCreated>]
+                     [-ext=<extension>] [-gsz=<greaterThanSize>]
+                     [-lsz=<lessThanSize>] <from>...
+Batch transfer files with certain conditions
+      <from>...     Files or glob patterns to rename
+  -c, --copy        Copy files (keep source)
+  -d, --destination=<destination>
+                    Destination folder
+      -dc, --datecreated=<dateCreated>
+                    Adding date to filter the files and folders.
+      -ext, --extension=<extension>
+                    Extension to filter out the files.
+      -gsz, --greaterthansize=<greaterThanSize>
+                    Filter out files and folders having size greater than the
+                      one provided.
+  -h, --help        Show this help message and exit.
+      -lsz, --lessthansize=<lessThanSize>
+                    Filter out files and folders having size less than the one
+                      provided.
+  -m, --move        Move files (cut - delete source)
+  -r, --recursive   Recursive means that any folder and subsequent subfolders
+                      will be affected.
+  -V, --version     Print version information and exit.
+```
 
 Feel free to open an issue if something breaks — happy to help!
+
 
 
 
