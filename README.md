@@ -103,6 +103,44 @@ The config file is the standard workaround.
 - Need `build-essential` + `zlib1g-dev` on Linux.
 - If "no constructor" error → add subcommand classes to `reflect-config.json` (already done here).
 
+## Documentation
+### Rename command
+- Used to rename files.
+- Main command: `ordo rename`. To get help, use `ordo rename --help`.
+- The options used are:
+```bash
+Usage: ordo rename [-hrsV] [-dc=<dateCreated>] [-ext=<extension>]
+                   [-gsz=<greaterThanSize>] [-lsz=<lessThanSize>]
+                   [-nn=<newNamePattern>] [-pfx=<prefix>] [-sfx=<suffix>]
+                   <targets>...
+Batch rename files with patterns
+      <targets>...   Files or glob patterns to rename
+      -dc, --datecreated=<dateCreated>
+                     Adding date to filter the files and folders.
+      -ext, --extension=<extension>
+                     Extension to filter out the files.
+      -gsz, --greaterthansize=<greaterThanSize>
+                     Filter out files and folders having size greater than the
+                       one provided.
+  -h, --help         Show this help message and exit.
+      -lsz, --lessthansize=<lessThanSize>
+                     Filter out files and folders having size less than the one
+                       provided.
+      -nn, --newname=<newNamePattern>
+                     New name (simple rename) or pattern (e.g., photo-{seq})
+      -pfx, --prefix=<prefix>
+                     Add prefix to original names
+  -r, --recursive    Recursive means that any folder and subsequent subfolders
+                       will be affected.
+  -s, --seq          Add sequential number (use {seq} in pattern)
+      -sfx, --suffix=<suffix>
+                     Add suffix to original names
+  -V, --version      Print version information and exit.
+```
+- 
+- 
+
 Feel free to open an issue if something breaks — happy to help!
+
 
 
