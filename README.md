@@ -3,7 +3,7 @@
  
   <img src="https://img.shields.io/badge/Java-17+-blue?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17+"/> <img src="https://img.shields.io/badge/Picocli-CLI-orange?style=for-the-badge&logo=picocli&logoColor=white" alt="Picocli"/> <img src="https://img.shields.io/badge/GraalVM-Native%20Image-green?style=for-the-badge&logo=graalvm&logoColor=white" alt="GraalVM"/> <img src="https://img.shields.io/badge/GitHub%20Pages-Deployed-brightgreen?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Pages"/><br>
 
-  [![Download Latest Release](https://img.shields.io/badge/Download%20Latest-brightgreen?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shawshank725/ordo/releases/latest) [![Maven Central](https://img.shields.io/maven-central/v/io.github.shawshank725/ordo?style=for-the-badge&logo=apache-maven&logoColor=white&color=orange)](https://central.sonatype.com/artifact/io.github.shawshank725/ordo)
+  ![Download Latest Release](https://img.shields.io/badge/Download%20Latest-brightgreen?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shawshank725/ordo/releases/latest) ![Maven Central](https://img.shields.io/maven-central/v/io.github.shawshank725/ordo?style=for-the-badge&logo=apache-maven&logoColor=white&color=orange)](https://central.sonatype.com/artifact/io.github.shawshank725/ordo)
 </div>
 
 Ordo is a cross-platform command-line tool for advanced file and directory management. Built in Java with Picocli, it offers safe and powerful batch operations including listing, renaming, transferring (move/copy), and deletion with comprehensive filtering and safety mechanisms.
@@ -237,6 +237,7 @@ Batch transfer files with certain conditions
 ```
 
 Feel free to open an issue if something breaks — happy to help!
+
 
 
 
