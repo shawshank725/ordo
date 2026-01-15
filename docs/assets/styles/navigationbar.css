@@ -1,0 +1,12 @@
+nav {
+    background-color: rgb(72, 255, 0);
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+
+}
+
+.navLinks {
+    display: flex;
+    column-gap: 5px;
+}

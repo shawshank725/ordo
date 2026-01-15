@@ -166,5 +166,10 @@ public class FileFetcher {
         return pattern.split("\\{seq}");
     }
 
-    // code/method to get a folder path
+
+    public static String getFileNameWithoutExtension(Path path, String extension){
+        String fileName = String.valueOf(path.getFileName());
+        fileName = fileName.replace("." + extension, "");
+        return fileName;
+    }
 }

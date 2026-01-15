@@ -125,5 +125,4 @@ public class TransferCommand implements Callable<Integer> {
 
         System.out.printf("%n%s: %d succeeded, %d failed.%n", action, success, failed);
     }
-
 }

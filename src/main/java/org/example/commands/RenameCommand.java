@@ -5,10 +5,10 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Command;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -37,9 +37,6 @@ public class RenameCommand implements Callable<Integer> {
     @Option(names = {"-s", "--seq"}, description = "Add sequential number (use {seq} in pattern)")
     private boolean sequence;
 
-    @Option(names = {"-t", "--type"}, defaultValue = "FILE", description = "By default, files will be affected. If ALL is provided, both folders and files will be affected.")
-    private FileType type;
-
     @Option(names = {"-r", "--recursive"}, description = "Recursive means that any folder and subsequent subfolders will be affected.")
     private boolean recursive;
 
@@ -57,112 +54,99 @@ public class RenameCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        renameFiles(targets, newNamePattern, prefix, suffix,type, sequence);
+        renameFiles(targets, newNamePattern, prefix, suffix,FileType.FILE, sequence);
         return 0;
     }
 
     public void renameFiles(List<Path> targets, String newNamePattern,
                             String prefix, String suffix,
                             FileType type, boolean sequence) throws IOException {
-
-        // get list of files based on specified parameters
+        if (targets.isEmpty()) {
+            System.out.println("The target list is empty. Operation cannot be performed.");
+            return;
+        }
         List<Path> files = getFiles(
                 targets, recursive, dateCreated, extension,
                 lessThanSize, greaterThanSize, type
         );
 
-        // check if empty or not. if yes then print else traverse
         if (files.isEmpty()){
-            System.out.println("The files list is empty.");
+            System.out.println("The files list is empty. Operation cannot be performed.");
             return;
         }
 
-        // sequence number is 1.
-        int sequenceNumber = 1;
-
-        // traverse the list to rename the files
-        for (Path path: files){
-            Path parent = path.getParent();
-            String oldFileName = path.getFileName().toString();
-            String ext = getExtension(oldFileName);
-
-            // providing a base name, don't want this to break on files with no extensions like dockerfile
-            String baseName = oldFileName;
-            if (!ext.isEmpty()) {
-                baseName = oldFileName.substring(0, oldFileName.length() - ext.length() - 1);
-            }
-
-            StringBuilder newName = new StringBuilder();
-
-            // Handle case 1: Pattern provided, but no {seq} in it, and -s flag is given → error
-            if (newNamePattern != null && !newNamePattern.isEmpty() && !newNamePattern.contains("{seq}") && sequence) {
-                System.err.println("Error: -s (--seq) flag provided, but {seq} not found in the pattern.");
-                return;  // Stop the entire operation or continue without seq? (I chose stop for safety)
-            }
-
-            // Handle case 2: Pattern provided with {seq}, and -s flag is given → replace {seq} with number
-            if (newNamePattern != null && !newNamePattern.isEmpty() && newNamePattern.contains("{seq}") && sequence) {
-                String[] patternBroken = breakNewNamePattern(newNamePattern);
-                StringBuilder tempNewName = new StringBuilder();
-                for (String substring : patternBroken) {
-                    tempNewName.append(substring).append(sequenceNumber);
+        if (hasRenameInstruction()) {
+            int sequenceNumber = 1;
+            for (Path path : files ) {
+                if (Files.isRegularFile(path)){
+                    Path parent = path.getParent();
+                    if (parent == null){
+                        parent = Path.of(".");
+                    }
+                    String newName = giveNewName(parent, path, sequenceNumber);
+                    Path newFilePath = parent.resolve(newName);
+                    if (path.equals(newFilePath)) {
+                        System.out.println("Skipping (same name): " + path);
+                        continue;
+                    }
+                    try {
+                        Files.move(path, newFilePath);
+                        System.out.println("Renamed file: " + path.getFileName() + " to " + newFilePath.getFileName());
+                        sequenceNumber++;
+                    } catch (Exception e){
+                        Files.move(path, newFilePath, StandardCopyOption.REPLACE_EXISTING);
+                        //System.out.println("Failed to rename the file: " + path + ". Error: " + e.getMessage());
+                    }
                 }
-                newName.append(tempNewName);
             }
-
-            // Handle case 3: No pattern, but -s flag is given → rename to number.ext
-            else if (newNamePattern == null && sequence) {
-                newName.append(sequenceNumber);
-            }
-
-            // Handle other cases: Pattern without {seq} and no -s → use pattern as literal
-            // Or no pattern and no -s → use original name (or error if you want no-op)
-            else if (newNamePattern != null && !newNamePattern.isEmpty()) {
-                newName.append(newNamePattern);  // Literal pattern
-            } else {
-                newName.append(baseName);  // Original name — add error if you don't want no-op?
-            }
-
-            // add the prefix and suffix if any
-            if (prefix != null){
-                newName.insert(0, prefix);
-            }
-            if (suffix != null){
-                newName.append(suffix);
-            }
-            // add extension
-            if (!ext.isEmpty()){
-                newName.append(".").append(ext);
-            }
-            // new name building is complete at this point.
-
-            // checking if name exists or not.
-            Path finalNewPath = parent.resolve(newName.toString());
-            int counter = 1;
-
-            // Build the base name without extension for collision
-            String baseForCollision = newName.toString();
-            if (!ext.isEmpty()) {
-                baseForCollision = baseForCollision.substring(0, baseForCollision.length() - ext.length() - 1);
-            }
-
-            while (Files.exists(finalNewPath)) {
-                String counterStr = " (" + counter + ")";
-                String collisionName = baseForCollision + counterStr + (ext.isEmpty() ? "" : "." + ext);
-                finalNewPath = parent.resolve(collisionName);
-                counter++;
-            }
-
-            try {
-                Files.move(path, finalNewPath);
-                String displayedNewName = finalNewPath.getFileName().toString();
-                System.out.printf("Renamed: %s → %s%n", oldFileName, displayedNewName);
-            } catch (IOException e) {
-                String displayedNewName = finalNewPath.getFileName().toString();
-                System.err.printf("Failed to rename: %s → %s (%s)%n", oldFileName, displayedNewName, e.getMessage());
-            }
-
-            sequenceNumber++;
         }
+        else {
+            System.out.println("Naming pattern is not provided.");
+        }
+    }
+
+    private boolean hasRenameInstruction() {
+        return
+                (newNamePattern != null && !newNamePattern.trim().isEmpty()) ||
+                        (prefix       != null && !prefix.trim().isEmpty())         ||
+                        (suffix       != null && !suffix.trim().isEmpty());
+    }
+
+    // this function checks the existence of a file and returns a new name
+    private String giveNewName(Path parent, Path path, int sequenceNumber){
+        StringBuilder newName = new StringBuilder();
+        String extensionFromOldName = getExtension(path.toString());
+        int counter = 1;
+
+        if (newNamePattern != null) {
+            if (sequence && newNamePattern.contains("{seq}")) {
+                newName.append(newNamePattern.replace("{seq}", Integer.toString(sequenceNumber)));
+            }
+            else if (!sequence || !newNamePattern.contains("{seq}")){
+                newName.append(newNamePattern);
+            }
+        }
+        else {
+            newName.append(getFileNameWithoutExtension(path,extensionFromOldName));
+        }
+        if (prefix != null)
+            newName.insert(0, prefix);
+        if (suffix != null)
+            newName.append(suffix);
+
+        String tempNewName = extensionFromOldName.isEmpty() ? newName.toString() :newName.toString() + "." + extensionFromOldName;
+        Path finalFilePath = parent.resolve(tempNewName);
+        while (Files.exists(finalFilePath)){
+            System.out.println("OI" + path);
+            String counterString = " ("+ counter + ")";
+            newName.append(counterString);
+            tempNewName = extensionFromOldName.isEmpty() ? newName.toString() :newName.toString() + "." + extensionFromOldName;
+            finalFilePath = parent.resolve(tempNewName);
+            counter++;
+        }
+        if (!extensionFromOldName.isEmpty()) {
+            newName.append(".").append(extensionFromOldName);
+        }
+        return newName.toString();
     }
 }
